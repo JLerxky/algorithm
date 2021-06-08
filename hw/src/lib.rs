@@ -1,7 +1,3 @@
-fn main() {
-    println!("Hello, HW!");
-}
-
 /// # 字符串最后一个单词的长度
 /// ## 描述
 /// 计算字符串最后一个单词的长度，单词以空格隔开，字符串长度小于5000。
@@ -15,6 +11,7 @@ fn main() {
 /// 输出： 8
 /// 说明： 最后一个单词为nowcoder，长度为8
 /// ```
+#[test]
 fn hj1() {
     use std::io::{self, *};
 
@@ -43,6 +40,7 @@ fn hj1() {
 ///       A
 /// 输出： 2
 /// ```
+#[test]
 fn hj2() {
     use std::io::{self, *};
 
@@ -56,9 +54,4 @@ fn hj2() {
             println!("{}", text.len() - new_text.len());
         }
     }
-}
-
-#[test]
-fn test() {
-    hj2();
 }
