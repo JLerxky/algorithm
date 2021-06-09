@@ -1,3 +1,5 @@
+use std::net;
+
 /// # 字符串最后一个单词的长度
 /// ## 描述
 /// 计算字符串最后一个单词的长度，单词以空格隔开，字符串长度小于5000。
@@ -102,53 +104,59 @@ fn hj18() {
     let mut err = 0;
     let mut private = 0;
 
-    let mut buf = String::new();
-    'line: for readed in stdin.lock().read_line(&mut buf) {
-        if readed != 0 {
+    'line: for line in stdin.lock().lines() {
+        let line = line.unwrap();
+        if line.len() == 0 {
             break 'line;
         }
-        let line = buf.clone();
-        buf.clear();
         let text: Vec<&str> = line.split("~").collect();
         // 识别子网掩码
-        let sub_mask = text[1];
+        let sub_mask = text[1].clone();
         let sub_mask_split: Vec<&str> = sub_mask.split(".").collect();
-        if sub_mask_split.len() != 4 {
-            err += 1;
-            continue 'line;
-        }
         let mut tmp = 255u8;
-        'mask: for mask in sub_mask_split {
-            if let Ok(mask) = mask.parse::<u8>() {
-                println!("{:?}", mask);
-                match mask {
+        for (i, mask) in sub_mask_split.iter().enumerate() {
+            match mask.parse::<u8>() {
+                Ok(one) => match one {
                     0 => {
-                        if tmp == 255 {
-                            tmp = 0;
+                        if i == 0 {
+                            err += 1;
+                            continue 'line;
                         }
-                        continue 'mask;
+                        tmp = 0;
                     }
-                    255 => {
-                        if tmp == 255 {
-                            continue 'mask;
+                    _ => {
+                        if tmp != 255u8 {
+                            err += 1;
+                            continue 'line;
+                        } else {
+                            if one == 255u8 && i == 3 {
+                                err += 1;
+                                continue 'line;
+                            }
                         }
+                        tmp = one;
                     }
-                    _ => {}
+                },
+                Err(_) => {
+                    err += 1;
+                    continue 'line;
                 }
             }
-            err += 1;
-            continue 'line;
         }
         // 识别IP
         let ip = text[0];
         let ip_split: Vec<&str> = ip.split(".").collect();
-        if ip_split.len() != 4 {
-            err += 1;
-            continue 'line;
+        for ip in &ip_split {
+            match ip.parse::<u8>() {
+                Ok(_) => {}
+                Err(_) => {
+                    err += 1;
+                    continue 'line;
+                }
+            }
         }
         // ip第1位
         if let Ok(ip1) = ip_split[0].parse::<u8>() {
-            println!("{:?}", ip1);
             match ip1 {
                 0 => {}
                 1..=126 => {
@@ -161,11 +169,25 @@ fn hj18() {
                 128..=191 => {
                     b += 1;
                     if ip1 == 172 {
-                        let ip2 = ip_split[0].parse::<u8>();
+                        if let Ok(ip2) = ip_split[1].parse::<u8>() {
+                            match ip2 {
+                                16..=31 => {
+                                    private += 1;
+                                }
+                                _ => {}
+                            }
+                        }
                     }
                 }
                 192..=223 => {
                     c += 1;
+                    if ip1 == 192 {
+                        if let Ok(ip2) = ip_split[1].parse::<u8>() {
+                            if ip2 == 168 {
+                                private += 1;
+                            }
+                        }
+                    }
                 }
                 224..=239 => {
                     d += 1;
