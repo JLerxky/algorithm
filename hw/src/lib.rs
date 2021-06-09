@@ -102,77 +102,81 @@ fn hj18() {
     let mut err = 0;
     let mut private = 0;
 
-    'line: for line in stdin.lock().lines() {
-        if let Ok(line) = line {
-            let text: Vec<&str> = line.split("~").collect();
-            // 识别子网掩码
-            let sub_mask = text[1];
-            let sub_mask_split: Vec<&str> = sub_mask.split(".").collect();
-            if sub_mask_split.len() != 4 {
-                err += 1;
-                break 'line;
-            }
-            let mut tmp = 255u8;
-            'mask: for mask in sub_mask_split {
-                if let Ok(mask) = mask.parse::<u8>() {
-                    println!("{:?}", mask);
-                    match mask {
-                        0 => {
-                            if tmp == 255 {
-                                tmp = 0;
-                            }
+    let mut buf = String::new();
+    'line: for readed in stdin.lock().read_line(&mut buf) {
+        if readed != 0 {
+            break 'line;
+        }
+        let line = buf.clone();
+        buf.clear();
+        let text: Vec<&str> = line.split("~").collect();
+        // 识别子网掩码
+        let sub_mask = text[1];
+        let sub_mask_split: Vec<&str> = sub_mask.split(".").collect();
+        if sub_mask_split.len() != 4 {
+            err += 1;
+            continue 'line;
+        }
+        let mut tmp = 255u8;
+        'mask: for mask in sub_mask_split {
+            if let Ok(mask) = mask.parse::<u8>() {
+                println!("{:?}", mask);
+                match mask {
+                    0 => {
+                        if tmp == 255 {
+                            tmp = 0;
+                        }
+                        continue 'mask;
+                    }
+                    255 => {
+                        if tmp == 255 {
                             continue 'mask;
                         }
-                        255 => {
-                            if tmp == 255 {
-                                continue 'mask;
-                            }
-                        }
-                        _ => {}
+                    }
+                    _ => {}
+                }
+            }
+            err += 1;
+            continue 'line;
+        }
+        // 识别IP
+        let ip = text[0];
+        let ip_split: Vec<&str> = ip.split(".").collect();
+        if ip_split.len() != 4 {
+            err += 1;
+            continue 'line;
+        }
+        // ip第1位
+        if let Ok(ip1) = ip_split[0].parse::<u8>() {
+            println!("{:?}", ip1);
+            match ip1 {
+                0 => {}
+                1..=126 => {
+                    a += 1;
+                    if ip1 == 10 {
+                        private += 1;
                     }
                 }
-                err += 1;
-                break 'line;
-            }
-            // 识别IP
-            let ip = text[0];
-            let ip_split: Vec<&str> = ip.split(".").collect();
-            if ip_split.len() != 4 {
-                err += 1;
-                break 'line;
-            }
-            // ip第1位
-            if let Ok(ip1) = ip_split[0].parse::<u8>() {
-                println!("{:?}", ip1);
-                match ip1 {
-                    0 => {}
-                    1..=126 => {
-                        a += 1;
-                        if ip1 == 10 {
-                            private += 1;
-                        }
-                    }
-                    127 => {}
-                    128..=191 => {
-                        b += 1;
-                        if ip1 == 172 {
-                            let ip2 = ip_split[0].parse::<u8>();
-                        }
-                    }
-                    192..=223 => {
-                        c += 1;
-                    }
-                    224..=239 => {
-                        d += 1;
-                    }
-                    240..=255 => {
-                        e += 1;
+                127 => {}
+                128..=191 => {
+                    b += 1;
+                    if ip1 == 172 {
+                        let ip2 = ip_split[0].parse::<u8>();
                     }
                 }
-            } else {
-                err += 1;
-                break 'line;
+                192..=223 => {
+                    c += 1;
+                }
+                224..=239 => {
+                    d += 1;
+                }
+                240..=255 => {
+                    e += 1;
+                }
             }
+        } else {
+            err += 1;
+            continue 'line;
         }
     }
     println!("{} {} {} {} {} {} {}", a, b, c, d, e, err, private);
